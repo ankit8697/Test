@@ -3,10 +3,10 @@ import java.util.*;
 
 /**
  * Maze.java
- * Solution to the first Maze Assignment (HW3).
+ * Solution to the Maze Assignment (HW5).
  * CS 201: Data Structures - Winter 2018
  *
- * @author Eric Alexander
+ * @author Ankit Sanghi
  */
 public class Maze {
     private ArrayList<ArrayList<MazeSquare>> rowList;
@@ -168,50 +168,112 @@ public class Maze {
             rowNum++;
         }
     }
-    
+
     /**
-    * Computes and returns a solution to this maze. If there are multiple 
-    * solutions, only one is returned, and getSolution() makes no guarantees about 
-    * which one. However, the returned solution will not include visits to dead 
-    * ends or any backtracks, even if backtracking occurs during the solution 
+    * Computes and returns a solution to this maze. If there are multiple
+    * solutions, only one is returned, and getSolution() makes no guarantees about
+    * which one. However, the returned solution will not include visits to dead
+    * ends or any backtracks, even if backtracking occurs during the solution
     * process.
     *
     * @return a LLStack of MazeSquare objects containing the sequence of squares
-    *         visited to go from the start square (bottom of the stack) to the 
+    *         visited to go from the start square (bottom of the stack) to the
     *         finish square (top of the stack).
     */
     public LLStack<MazeSquare> getSolution() {
-        
+        LLStack<MazeSquare> stack = new LLStack<MazeSquare>();
+        // Getting the start square
+        MazeSquare startSquare = rowList.get(startRow).get(startCol);
+        // Getting the finish square
+        MazeSquare finishSquare = rowList.get(endRow).get(endCol);
+        // Visiting the start square
+        startSquare.visit();
+        // Pushing the start square into the stack
+        stack.push(startSquare);
+        // If the stack is empty, the start has been popped out and the maze is unsolvable
+        while (!stack.isEmpty()) {
+              MazeSquare T = stack.peek();
+              // If the current square is the finish square, the maze is solved
+              if (T == finishSquare) {
+                return stack;
+              }
+              // Check if there is no valid path to follow from the current MazeSquare
+                if ((getNeighbour(T,"left").isVisited() || getNeighbour(T,"left").hasRightWall()) &&
+                (getNeighbour(T,"right").isVisited() || getNeighbour(T,"right").hasLeftWall()) &&
+                (getNeighbour(T,"top").isVisited() || getNeighbour(T,"top").hasBottomWall()) &&
+                (getNeighbour(T,"bottom").isVisited() || getNeighbour(T,"bottom").hasTopWall())) {
+                  // If there is no valid path, pop the stack and move one space back
+                  stack.pop();
+                }
+                else {
+                  // Check to see if there is a valid path available
+                  // If there is a valid path, mark it as visited and push it into the stack
+                  if (!(getNeighbour(T,"left").isVisited() || getNeighbour(T,"left").hasRightWall())) {
+                    stack.push(getNeighbour(T,"left"));
+                    getNeighbour(T,"left").visit();
+                  }
+                  else if (!(getNeighbour(T,"right").isVisited() || getNeighbour(T,"right").hasLeftWall())) {
+                    stack.push(getNeighbour(T, "right"));
+                    getNeighbour(T,"right").visit();
+                  }
+                  else if (!(getNeighbour(T,"top").isVisited() || getNeighbour(T,"top").hasBottomWall())) {
+                    stack.push(getNeighbour(T, "top"));
+                    getNeighbour(T,"top").visit();
+                  }
+                  else if (!(getNeighbour(T,"bottom").isVisited() || getNeighbour(T,"bottom").hasTopWall())) {
+                    stack.push(getNeighbour(T, "bottom"));
+                    getNeighbour(T,"bottom").visit();
+                  }
+                }
+              }
+          // If the stack is empty, the maze is unsolvable
+          System.out.println("The maze is unsolvable");
+          return stack;
     }
-    
+
+    /**
+     * Finds the MazeSquare object in the desired direction and returns that MazeSquare object
+     * @param s The current MazeSquare object
+     * @param direction Which direction is the required MazeSquare with respect to the current MazeSquare
+     * @return The MazeSquare object present in the requested direction
+     */
     public MazeSquare getNeighbour(MazeSquare s, String direction) {
-        // Reference the corrosponding MazeSquare using the index position in rowList
-        if (direction.equals("left")) {
-            return rowList.get(s.getRow()).get(s.getCol()-1);
+        // We use a try block in case a block that falls outside rowList is referenced
+        try {
+          // Reference the corrosponding MazeSquare using the index position in rowList
+          if (direction.equals("left")) {
+              return rowList.get(s.getRow()).get(s.getCol()-1);
+          }
+          else if (direction.equals("right")) {
+              return rowList.get(s.getRow()).get(s.getCol()+1);
+          }
+          else if (direction.equals("top")) {
+              return rowList.get(s.getRow()-1).get(s.getCol());
+          }
+          else if (direction.equals("bottom")) {
+              return rowList.get(s.getRow()+1).get(s.getCol());
+          }
+          // This return statement will never trigger as either a return inside the conditional statements will be executed
+          // or an IndexOutOfBoundsException will be thrown
+          return null;
+        } catch (IndexOutOfBoundsException e) {
+          /* 
+          To handle the exception, we return a new MazeSquare reference containing an enclosed box
+          This makes the program think that there is a MazeSquare object outside the maze, but due to
+          it being enclosed, it can never reach it and thus cannot interfere with the maze solving process
+          */
+            return new MazeSquare(0,0,true,true,true, true, false, false);
         }
-        else if (direction.equals("right")) {
-            return rowList.get(s.getRow()).get(s.getCol()+1);
-        }
-        else if (direction.equals("top")) {
-            return rowList.get(s.getRow()-1).get(s.getCol());
-        }
-        else if (direction.equals("bottom")) {
-            return rowList.get(s.getRow()+1).get(s.getCol());
-        }
-        throw new IndexOutOfBoundsException("That MazeSquare doesn't exist");
-        return null;
     }
-    
+
 
     /**
      * Print the Maze to the Console
      */
     public void print() {
-	
-	// YOUR CODE WILL GO HERE:
-	// Before printing, use your getSolution() method
-	//  to get the solution to the Maze.
-	
+        // We first get a stack of all the MazeSquares required to solve the maze
+        LLStack stack = getSolution();
+
         ArrayList<MazeSquare> currRow;
         MazeSquare currSquare;
 
@@ -253,7 +315,6 @@ public class Maze {
 
                 System.out.print("  ");
 
-		// YOU WILL ADD CODE HERE
 		// If currSquare is part of the solution, mark it with *
                 if (currSquare.isStart() && currSquare.isEnd()) {
                     System.out.print("SE ");
@@ -261,6 +322,9 @@ public class Maze {
                     System.out.print("S  ");
                 } else if (!currSquare.isStart() && currSquare.isEnd()) {
                     System.out.print("E  ");
+                }
+                else if (stack.contains(currSquare)) {
+                  System.out.print("*  ");
                 } else {
                     System.out.print("   ");
                 }
